@@ -2,13 +2,12 @@ import { encryptNote } from "./encryption";
 import { uploadToIpfs } from "./ipfs";
 import { generateCommitment } from "./mixer";
 
-export async function prepareDeposit(receiverPublicKey: string) {
-  const note = await generateCommitment();
+export async function prepareDeposit(receiverPublicKey: string, chainId:number) {
+  const note = await generateCommitment(chainId);
 
   const encryptedNote = encryptNote(
     {
-      secret: note.secret.toString(),
-      nullifier: note.nullifier.toString(),
+      note: note,
       commitment: note.commitment.toString(),
     },
     receiverPublicKey,

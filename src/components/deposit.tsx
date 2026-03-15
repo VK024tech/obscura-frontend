@@ -1,6 +1,6 @@
 "use client";
 
-import { useWriteContract } from "wagmi";
+import { useChainId, useWriteContract } from "wagmi";
 import { OBSCURA_CONTRACT_ADDRESS, OBSCURA_ABI } from "@/lib/contracts.info";
 import { parseEther } from "viem";
 import { generateCommitment } from "@/lib/mixer";
@@ -10,9 +10,10 @@ import { prepareDeposit } from "@/lib/deposit";
 export default function Deposit() {
   const [receiverKey, setReceiverKey] = useState("");
   const { writeContract } = useWriteContract();
+  const chainId = useChainId();
 
   const handleDeposit = async () => {
-    const { commitment, cid } = await prepareDeposit(receiverKey);
+    const { commitment, cid } = await prepareDeposit(receiverKey, chainId);
 
     writeContract({
       address: OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
