@@ -13,5 +13,5 @@ export async function uploadToIpfs(data: any) {
 
 export async function retrieveFromIpfs(cid: string) {
   const data = await pinata.gateways.public.get(cid);
-  return data;
+  return data.data;
 }
