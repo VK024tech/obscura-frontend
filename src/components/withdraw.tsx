@@ -1,13 +1,21 @@
 "use client";
 
-import { OBSCURA_CONTRACT_ADDRESS } from "@/lib/contracts.info";
+import { OBSCURA_CONTRACT_ADDRESS, OBSCURA_ABI } from "@/lib/contracts.info";
 import { findReceiverDeposit } from "@/lib/findDeposit";
+import { generateWithdrawProof, formatProof } from "@/lib/generateProof";
+
 import { useState } from "react";
+import { useWriteContract, useAccount, useChainId } from "wagmi";
 
 export default function WithdrawPage() {
   const [privateKey, setPrivateKey] = useState("");
   const [deposits, setDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [withdrawingIndex, setWithdrawingIndex] = useState<number | null>(null);
+  const [allCommitments, setAllCommitments] = useState<bigint[]>([]);
+  const { writeContract } = useWriteContract();
+  const { address } = useAccount();
+  const chainId = useChainId();
 
   async function scanDeposits() {
     if (!privateKey) {
@@ -18,16 +26,59 @@ export default function WithdrawPage() {
     setLoading(true);
 
     try {
-      const results = await findReceiverDeposit(
+      const { userDeposits, allCommitments } = await findReceiverDeposit(
         OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
         privateKey,
       );
-      setDeposits(results);
+      setDeposits(userDeposits);
+      setAllCommitments(allCommitments);
     } catch (err) {
       console.error(err);
       alert("Scan failed");
     }
+
     setLoading(false);
+  }
+
+  async function handleWithdraw(dep: any, index: number) {
+    try {
+      setWithdrawingIndex(index);
+
+      const { proof, root, nullifierHash, signalHash } =
+        await generateWithdrawProof({
+          deposits: allCommitments,
+          leafIndex: dep.leafIndex,
+          secret: dep.secret,
+          nullifier: dep.nullifier,
+          recipient: address,
+          relayer: address,
+          relayerFee: 0,
+          chainId,
+          contractAddress: OBSCURA_CONTRACT_ADDRESS,
+        });
+
+      const formattedProof = formatProof(proof);
+
+      writeContract({
+        address: OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
+        abi: OBSCURA_ABI,
+        functionName: "withdraw",
+        args: [
+          formattedProof,
+          root,
+          nullifierHash,
+          signalHash,
+          address,
+          address,
+          0,
+        ],
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Withdraw failed");
+    }
+
+    setWithdrawingIndex(null);
   }
 
   return (
@@ -55,11 +106,18 @@ export default function WithdrawPage() {
             <h2 className="font-semibold mb-3">Your Deposits</h2>
 
             {deposits.map((dep, i) => (
-              <div key={i} className="border p-3 mb-2">
-                <p>Commitment: {dep.commitment}</p>
+              <div key={i} className="border p-3 mb-3 rounded">
+                <p className="text-sm break-all">
+                  Commitment: {dep.commitment}
+                </p>
                 <p>Leaf Index: {dep.leafIndex}</p>
-                <p>Secret: {dep.secret}</p>
-                <p>Nullifier: {dep.nullifier}</p>
+
+                <button
+                  onClick={() => handleWithdraw(dep, i)}
+                  className="mt-2 bg-green-600 text-white px-3 py-1 rounded"
+                >
+                  {withdrawingIndex === i ? "Withdrawing..." : "Withdraw"}
+                </button>
               </div>
             ))}
           </div>

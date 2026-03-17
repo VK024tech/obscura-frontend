@@ -8,10 +8,11 @@ export async function findReceiverDeposit(
 ) {
   const events = await getDepositEvents(mixerAddress);
   const myDeposits: any[] = [];
+  const allCommitments: bigint[] = [];
   for (const event of events) {
-    if (!event.cid) {
-      throw new Error("CID not found!");
-    }
+    if (!event.cid || !event.commitment) continue;
+
+    allCommitments.push(BigInt(event.commitment));
     try {
       const encryptedNote = await retrieveFromIpfs(event.cid);
       const decrypted = decryptNote(encryptedNote, receiverPublicKey);
@@ -28,5 +29,8 @@ export async function findReceiverDeposit(
     }
   }
 
-  return myDeposits;
+  return {
+    userDeposits: myDeposits,
+    allCommitments,
+  };
 }
