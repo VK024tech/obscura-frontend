@@ -5,15 +5,22 @@ import { findReceiverDeposit } from "@/lib/findDeposit";
 import { generateWithdrawProof, formatProof } from "@/lib/generateProof";
 
 import { useState } from "react";
-import { useWriteContract, useAccount, useChainId } from "wagmi";
+import {
+  useWriteContract,
+  useAccount,
+  useChainId,
+  useSwitchChain,
+} from "wagmi";
 
 export default function WithdrawPage() {
   const [privateKey, setPrivateKey] = useState("");
   const [deposits, setDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [requiredChainId, setRequiredChainId] = useState<number | null>(null);
   const [withdrawingIndex, setWithdrawingIndex] = useState<number | null>(null);
   const [allCommitments, setAllCommitments] = useState<bigint[]>([]);
   const { writeContract } = useWriteContract();
+  const { switchChain } = useSwitchChain();
   const { address } = useAccount();
   const chainId = useChainId();
 
@@ -24,16 +31,26 @@ export default function WithdrawPage() {
     }
 
     setLoading(true);
-
+    setRequiredChainId(null);
     try {
       const { userDeposits, allCommitments } = await findReceiverDeposit(
         OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
         privateKey,
+        chainId,
       );
       setDeposits(userDeposits);
       setAllCommitments(allCommitments);
     } catch (err) {
       console.error(err);
+
+      if (err instanceof Error && err.message.includes("Incorrect Chain")) {
+        const match = err.message.match(/chain (\d+)/);
+        if (match) {
+          setRequiredChainId(Number(match[1]));
+        }
+        setLoading(false);
+        return;
+      }
       alert("Scan failed");
     }
 
@@ -46,7 +63,7 @@ export default function WithdrawPage() {
 
       const { proof, root, nullifierHash, signalHash } =
         await generateWithdrawProof({
-          deposits: allCommitments,
+          commitments: allCommitments,
           leafIndex: dep.leafIndex,
           secret: dep.secret,
           nullifier: dep.nullifier,
@@ -57,21 +74,13 @@ export default function WithdrawPage() {
           contractAddress: OBSCURA_CONTRACT_ADDRESS,
         });
 
-      const formattedProof = formatProof(proof);
+      const { a, b, c } = formatProof(proof);
 
       writeContract({
         address: OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
         abi: OBSCURA_ABI,
         functionName: "withdraw",
-        args: [
-          formattedProof,
-          root,
-          nullifierHash,
-          signalHash,
-          address,
-          address,
-          0,
-        ],
+        args: [a, b, c, root, nullifierHash, address, address, 0, signalHash],
       });
     } catch (err) {
       console.error(err);
@@ -84,6 +93,21 @@ export default function WithdrawPage() {
   return (
     <div className="p-10 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Withdraw</h1>
+
+      {requiredChainId && (
+        <div className="bg-red-100 border border-red-400 p-4 rounded mb-4">
+          <p className="text-red-800 mb-3">
+            ⚠️ This deposit is on chain {requiredChainId}, but you're on chain{" "}
+            {chainId}
+          </p>
+          <button
+            onClick={() => switchChain?.({ chainId: requiredChainId })}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >
+            Switch to Chain {requiredChainId}
+          </button>
+        </div>
+      )}
 
       <input
         type="text"

@@ -3,7 +3,7 @@ import { poseidonHash } from "./poseidon";
 import { groth16 } from "snarkjs";
 
 export async function generateWithdrawProof({
-  deposits,
+  commitments,
   leafIndex,
   secret,
   nullifier,
@@ -13,10 +13,10 @@ export async function generateWithdrawProof({
   chaindId,
   contractAddress,
 }: any) {
-  const commitments = deposits.map((d: any) => BigInt(d.commitment));
+  const allCommitmentsBigInt = commitments;
 
   const { root, pathElements, pathIndices } = await generateMerkleProof(
-    commitments,
+    allCommitmentsBigInt,
     leafIndex,
   );
 
@@ -59,12 +59,12 @@ export async function generateWithdrawProof({
 }
 
 export function formatProof(proof: any) {
-  return [
-    [proof.pi_a[0], proof.pi_a[1]],
-    [
+  return {
+    a: [proof.pi_a[0], proof.pi_a[1]],
+    b: [
       [proof.pi_b[0][1], proof.pi_b[0][0]],
       [proof.pi_b[1][1], proof.pi_b[1][0]],
     ],
-    [proof.pi_c[0], proof.pi_c[1]],
-  ];
+    c: [proof.pi_c[0], proof.pi_c[1]],
+  };
 }

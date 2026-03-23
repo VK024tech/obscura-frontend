@@ -2,8 +2,6 @@
 
 import { useChainId, useWriteContract } from "wagmi";
 import { OBSCURA_CONTRACT_ADDRESS, OBSCURA_ABI } from "@/lib/contracts.info";
-import { parseEther } from "viem";
-import { generateCommitment } from "@/lib/mixer";
 import { useState } from "react";
 import { prepareDeposit } from "@/lib/deposit";
 
