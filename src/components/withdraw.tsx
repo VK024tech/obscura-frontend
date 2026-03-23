@@ -19,7 +19,7 @@ export default function WithdrawPage() {
   const [requiredChainId, setRequiredChainId] = useState<number | null>(null);
   const [withdrawingIndex, setWithdrawingIndex] = useState<number | null>(null);
   const [allCommitments, setAllCommitments] = useState<bigint[]>([]);
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   const { switchChain } = useSwitchChain();
   const { address } = useAccount();
   const chainId = useChainId();
@@ -58,6 +58,11 @@ export default function WithdrawPage() {
   }
 
   async function handleWithdraw(dep: any, index: number) {
+    if (!address) {
+      alert("Connect wallet first");
+      return;
+    }
+
     try {
       setWithdrawingIndex(index);
 
@@ -76,12 +81,15 @@ export default function WithdrawPage() {
 
       const { a, b, c } = formatProof(proof);
 
-      writeContract({
+      const txHash = await writeContractAsync({
         address: OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
         abi: OBSCURA_ABI,
         functionName: "withdraw",
         args: [a, b, c, root, nullifierHash, address, address, 0, signalHash],
       });
+
+      console.log("Withdraw TX:", txHash);
+      setDeposits((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error(err);
       alert("Withdraw failed");
