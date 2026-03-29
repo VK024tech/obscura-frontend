@@ -8,7 +8,9 @@ const pinata = new PinataSDK({
 export async function uploadToIpfs(data: any) {
   const result = await pinata.upload.public.json(data);
 
-  return result;
+  const cid = (result as any).data?.cid || (result as any).cid || (result as any).id;
+
+  return cid;
 }
 
 export async function retrieveFromIpfs(cid: string) {

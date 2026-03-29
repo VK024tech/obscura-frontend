@@ -11,10 +11,12 @@ interface KeyPair {
 export default function GenerateKeys() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
 
   const handleGenerateKeys = () => {
     const keys = generateEncryptionKeypair();
     setKeyPair(keys);
+    setShowPrivateKey(false);
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -24,84 +26,86 @@ export default function GenerateKeys() {
   };
 
   return (
-    <div className="p-10 max-w-2xl mx-auto bg-gray-50 rounded-lg">
-      <h1 className="text-2xl font-bold mb-6">Generate Encryption Keys</h1>
+    <div className="mx-auto w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0c1118]/95 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+      <h1 className="text-2xl font-semibold tracking-tight text-white">
+        Generate Encryption Keys
+      </h1>
+      <p className="mt-2 max-w-xl  text-sm leading-relaxed text-[#7f8996]">
+        Initialize your cryptographic identity. These keys are required to sign
+        private transactions and decrypt your vault data locally.
+      </p>
 
-      <div className="mb-6 ">
-        <p className="text-gray-600 mb-4">
-          Generate a new encryption keypair for secure deposits and withdrawals.
-        </p>
-
-        <button
-          onClick={handleGenerateKeys}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2  rounded font-medium "
-        >
-          Generate New Keys
-        </button>
-      </div>
-
-      {keyPair && (
-        <div className="space-y-6">
-          <div className="bg-white p-4 rounded border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <div>Public Key (Share this for depositor)</div>
-            </label>
-            <div className="flex gap-2">
-              <input
-                readOnly
-                value={keyPair.publicKey}
-                className="flex-1 p-3 bg-gray-100 border border-gray-300 rounded outline-0 font-mono text-sm resize-none"
-                type="password"
-              />
-              <button
-                onClick={() => copyToClipboard(keyPair.publicKey, "public")}
-                className={`px-4 py-2 rounded font-medium transition ${
-                  copied === "public"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-200 hover:bg-gray-300"
-                }`}
-              >
-                {copied === "public" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded border border-red-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Private Key (Keep this secret!)
-            </label>
-            <div className="flex gap-2">
-              <input
-                readOnly
-                value={keyPair.privateKey}
-                className="flex-1 p-3 bg-gray-100 border outline-0 border-gray-300 rounded font-mono text-sm resize-none"
-                type="password"
-              />
-              <button
-                onClick={() => copyToClipboard(keyPair.privateKey, "private")}
-                className={`px-4 py-2 rounded font-medium transition ${
-                  copied === "private"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-200 hover:bg-gray-300"
-                }`}
-              >
-                {copied === "private" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <p className="text-sm text-red-600 mt-2 font-semibold">
-              ⚠️ Never share your private key with anyone!
+      <div className="mt-7 space-y-5">
+        <div>
+          <p className="mb-2 text-xs font-semibold tracking-[0.11em] text-[#727d8c] uppercase">
+            Public Key (Safe To Share)
+          </p>
+          <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/8 px-4 py-3">
+            <p className="min-w-0 flex-1 truncate font-mono text-sm text-[#b3bcc7]">
+              {keyPair?.publicKey || "pk_0x8f2d...9e4c2b1a0f8d7e6c5b4a3f2e1d0c"}
             </p>
-          </div>
-
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
-            <p className="text-sm text-yellow-800">
-              <strong>Save your keys securely:</strong> Store your private key
-              in a secure location. You'll need it to withdraw your deposits
-              later.
-            </p>
+            <button
+              onClick={() =>
+                keyPair && copyToClipboard(keyPair.publicKey, "public")
+              }
+              disabled={!keyPair}
+              className="rounded-md p-2 text-[#9ca5af] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Copy public key"
+            >
+              {copied === "public" ? "Copied" : "⧉"}
+            </button>
           </div>
         </div>
-      )}
+
+        <div>
+          <p className="mb-2 text-xs font-semibold tracking-[0.11em] text-[#727d8c] uppercase">
+            Private Key (Highly Sensitive)
+          </p>
+          <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/8 px-4 py-3">
+            <p className="min-w-0 flex-1 truncate font-mono text-sm text-[#27e8b0]">
+              {keyPair
+                ? showPrivateKey
+                  ? keyPair.privateKey
+                  : "•".repeat(Math.min(keyPair.privateKey.length, 48))
+                : "••••••••••••••••••••••••••••••••••••••••••••"}
+            </p>
+            <button
+              onClick={() => setShowPrivateKey((prev) => !prev)}
+              disabled={!keyPair}
+              className="rounded-md p-2 text-[#9ca5af] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label={showPrivateKey ? "Hide private key" : "Show private key"}
+            >
+              {showPrivateKey ? "Hide" : "Show"}
+            </button>
+            <button
+              onClick={() =>
+                keyPair && copyToClipboard(keyPair.privateKey, "private")
+              }
+              disabled={!keyPair}
+              className="rounded-md p-2 text-[#9ca5af] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Copy private key"
+            >
+              {copied === "private" ? "Copied" : "⧉"}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-red-500/35 bg-[#2b0f16]/80 p-4">
+          <p className="text-sm font-bold text-[#ff5a6f] uppercase">
+            Security Protocol Violation Risk
+          </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-[#c8a6ae]">
+            Never share your private key with anyone.
+          </p>
+        </div>
+      </div>
+
+      <button
+        onClick={handleGenerateKeys}
+        className="mt-8 w-full rounded-xl bg-gradient-to-r from-[#9bfad3] to-[#14f4ba] px-6 py-4 text-sm font-bold tracking-[0.18em] text-[#063126] uppercase shadow-[0_0_30px_rgba(20,244,186,0.35)] transition hover:brightness-105"
+      >
+        Generate New Keys
+      </button>
     </div>
   );
 }

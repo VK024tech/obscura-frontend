@@ -8,10 +8,10 @@ export async function generateCommitment(chainId: number) {
 
   const note = `obscura:${chainId}:${secret.toString()}:${nullifier.toString()}`;
 
-  const commitment = poseidonHash([secret, nullifier]);
+  const commitment = await poseidonHash([secret, nullifier]);
 
   return {
     note,
-    commitment
+    commitment,
   };
 }

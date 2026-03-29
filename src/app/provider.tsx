@@ -3,7 +3,7 @@
 import React from "react";
 import { WagmiProvider } from "wagmi";
 import { darkTheme, getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { mainnet, sepolia } from "viem/chains";
+import { mainnet, sepolia, anvil } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const projectId = process.env.NEXT_PUBLIC_PROJECTID;
@@ -15,7 +15,7 @@ if (!projectId) {
 const config = getDefaultConfig({
   appName: "Obscura",
   projectId,
-  chains: [sepolia, mainnet],
+  chains: [anvil, sepolia, mainnet],
   ssr: true,
 });
 

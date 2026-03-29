@@ -1,6 +1,17 @@
-export const OBSCURA_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_SEPOLIA_ADDRESS;
+export const OBSCURA_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_ANVIL_ADDRESS;
 
 export const OBSCURA_ABI = [
+  {
+    name: "getLastRoot",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      {
+        type: "bytes32",
+      },
+    ],
+  },
   {
     name: "deposit",
     type: "function",

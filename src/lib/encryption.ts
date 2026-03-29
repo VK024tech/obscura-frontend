@@ -36,11 +36,8 @@ export function encryptNote(note: any, receiverPublicKey: string) {
 
 export function decryptNote(encryptedData: any, receiverPrivateKey: string) {
   const nonce = util.decodeBase64(encryptedData.nonce);
-  console.log(nonce);
   const tempPublicKey = util.decodeBase64(encryptedData.tempPublicKey);
-  console.log(tempPublicKey);
   const note = util.decodeBase64(encryptedData.encryptedNote);
-  console.log(note);
 
   const receiverKey = util.decodeBase64(receiverPrivateKey);
 

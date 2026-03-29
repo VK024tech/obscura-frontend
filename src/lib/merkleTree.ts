@@ -1,19 +1,22 @@
 import { MerkleTree } from "fixed-merkle-tree";
 import { getPoseidon, poseidonHashSync } from "./poseidon";
 
-const TREE_LEVELS = Number(process.env.TREE_LEVELS!);
+const TREE_LEVELS = Number(process.env.TREE_LEVELS || 20);
 
 export async function buildMerkleTree(commitments: bigint[]) {
+  if (!commitments || !Array.isArray(commitments)) {
+    throw new Error("Commitments must be an array");
+  }
+
   await getPoseidon();
-  
-  const tree = new MerkleTree(TREE_LEVELS, commitments.map(c => c.toString()), {
-    hashFunction: (left: any, right: any) => {
-      return poseidonHashSync([BigInt(left), BigInt(right)]);
-    },
+
+  const leaves = commitments.map((c) => c.toString());
+
+  return new MerkleTree(TREE_LEVELS, leaves, {
+    hashFunction: (left: string | number, right: string | number) =>
+      poseidonHashSync([BigInt(left), BigInt(right)]),
     zeroElement: "0",
   });
-
-  return tree;
 }
 
 export async function generateMerkleProof(

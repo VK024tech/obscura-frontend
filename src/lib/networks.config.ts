@@ -1,4 +1,9 @@
 export const NETWORKS = {
+  anvil: {
+    chainId: process.env.NEXT_PUBLIC_ANVIL_CHAINID,
+    rpc: process.env.NEXT_PUBLIC_ANVIL_RPC,
+    address: process.env.NEXT_PUBLIC_ANVIL_ADDRESS,
+  },
   sepolia: {
     chainId: process.env.NEXT_PUBLIC_SEPOLIA_CHAINID,
     rpc: process.env.NEXT_PUBLIC_SEPOLIA_RPC,

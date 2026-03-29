@@ -3,16 +3,41 @@ import { getDepositEvents } from "./events";
 import { retrieveFromIpfs } from "./ipfs";
 import { getWithdrawalEvents } from "./getWithdrawed";
 import { poseidonHash } from "./poseidon";
+import { publicClient } from "./viemClient";
+import { OBSCURA_CONTRACT_ADDRESS, OBSCURA_ABI } from "./contracts.info";
 
 export async function findReceiverDeposit(
   mixerAddress: `0x${string}`,
   receiverPrivateKey: string,
-   currentChainId: number
+  currentChainId: number,
 ) {
-  
   const events = await getDepositEvents(mixerAddress);
+
   const myDeposits: any[] = [];
   const allCommitments: bigint[] = [];
+
+  const sortedEvents = events.sort(
+    (a, b) => (a.leafIndex || 0) - (b.leafIndex || 0),
+  );
+
+  for (const event of sortedEvents) {
+    if (event.commitment) {
+      const commitment = BigInt(event.commitment);
+      allCommitments.push(commitment);
+    }
+  }
+
+  let contractRoot: bigint | null = null;
+  try {
+    const rootHex = await publicClient.readContract({
+      address: OBSCURA_CONTRACT_ADDRESS as `0x${string}`,
+      abi: OBSCURA_ABI,
+      functionName: "getLastRoot",
+      args: [],
+    });
+    contractRoot = BigInt(rootHex as string);
+  } catch {
+  }
 
   const withdrawals = await getWithdrawalEvents(mixerAddress);
 
@@ -22,21 +47,23 @@ export async function findReceiverDeposit(
       .filter((x): x is string => x !== undefined),
   );
 
-  for (const event of events) {
-    if (!event.cid || !event.commitment) continue;
+  for (const event of sortedEvents) {
+    if (!event.cid || !event.commitment) {
+      continue;
+    }
 
-    allCommitments.push(BigInt(event.commitment));
     try {
       const encryptedNote = await retrieveFromIpfs(event.cid);
+
       const decrypted = decryptNote(encryptedNote, receiverPrivateKey);
 
-      const nullifierHash = await poseidonHash([BigInt(decrypted.nullifier)]);
+      const [, chainId, secret, nullifier] = decrypted.note.split(":");
+
+      const nullifierHash = await poseidonHash([BigInt(nullifier)]);
 
       if (spent.has(nullifierHash.toString())) {
         continue;
       }
-
-      const [_, chainId, secret, nullifier] = decrypted.note.note.split(":");
 
       if (Number(chainId) != currentChainId) {
         throw new Error(`Incorrect Chain, Please switch to chain ${chainId}!`);
@@ -56,9 +83,9 @@ export async function findReceiverDeposit(
       continue;
     }
   }
-
   return {
     userDeposits: myDeposits,
     allCommitments,
+    contractRoot,
   };
 }
